@@ -95,16 +95,20 @@
 
 
 
-<meta name="description" content="技术沉淀">
-<meta property="og:type" content="website">
-<meta property="og:title" content="src">
-<meta property="og:url" content="https://wangamama.github.io/hh.github.io/index.html">
+<meta name="description" content="计算机中的存储介质与局部性原理计算机中最重要的存储介质分为几类：硬盘、内存、二级缓存(L3,L2，L1)、寄存器。从左往右，访问速度从慢到快，制造成本也越来越高。 什么是随机IO和顺序IO?随机访问的特点是每次IO请求的数据在磁盘上的位置跨度很大（如：分布在不同的扇区），因此N个非常小的IO请求（如：1K），必须以N次IO请求才能获取到相应的数据。顺序访问的特点跟随机访问相反，它请求的数据在磁盘的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="谈谈Mysql的索引">
+<meta property="og:url" content="https://wangamama.github.io/hh.github.io/2017/09/13/谈谈Mysql的索引/index.html">
 <meta property="og:site_name" content="src">
-<meta property="og:description" content="技术沉淀">
+<meta property="og:description" content="计算机中的存储介质与局部性原理计算机中最重要的存储介质分为几类：硬盘、内存、二级缓存(L3,L2，L1)、寄存器。从左往右，访问速度从慢到快，制造成本也越来越高。 什么是随机IO和顺序IO?随机访问的特点是每次IO请求的数据在磁盘上的位置跨度很大（如：分布在不同的扇区），因此N个非常小的IO请求（如：1K），必须以N次IO请求才能获取到相应的数据。顺序访问的特点跟随机访问相反，它请求的数据在磁盘的">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://images2015.cnblogs.com/blog/943211/201604/943211-20160423215534429-38509930.png">
+<meta property="og:image" content="http://images2015.cnblogs.com/blog/943211/201604/943211-20160423215617179-1361223178.png">
+<meta property="og:updated_time" content="2017-09-14T05:36:05.526Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="src">
-<meta name="twitter:description" content="技术沉淀">
+<meta name="twitter:title" content="谈谈Mysql的索引">
+<meta name="twitter:description" content="计算机中的存储介质与局部性原理计算机中最重要的存储介质分为几类：硬盘、内存、二级缓存(L3,L2，L1)、寄存器。从左往右，访问速度从慢到快，制造成本也越来越高。 什么是随机IO和顺序IO?随机访问的特点是每次IO请求的数据在磁盘上的位置跨度很大（如：分布在不同的扇区），因此N个非常小的IO请求（如：1K），必须以N次IO请求才能获取到相应的数据。顺序访问的特点跟随机访问相反，它请求的数据在磁盘的">
+<meta name="twitter:image" content="http://images2015.cnblogs.com/blog/943211/201604/943211-20160423215534429-38509930.png">
 
 
 
@@ -134,13 +138,13 @@
 
 
 
-  <link rel="canonical" href="https://wangamama.github.io/hh.github.io/"/>
+  <link rel="canonical" href="https://wangamama.github.io/hh.github.io/2017/09/13/谈谈Mysql的索引/"/>
 
 
 
 
 
-  <title>src</title>
+  <title>谈谈Mysql的索引 | src</title>
   
 
 
@@ -159,8 +163,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -233,9 +236,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -265,9 +268,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/hh.github.io/2017/09/13/谈谈Mysql的索引/" itemprop="url">谈谈Mysql的索引</a></h1>
+          <h1 class="post-title" itemprop="name headline">谈谈Mysql的索引</h1>
         
 
         <div class="post-meta">
@@ -317,9 +318,7 @@
       
 
       
-        
-          
-            <h2 id="计算机中的存储介质与局部性原理"><a href="#计算机中的存储介质与局部性原理" class="headerlink" title="计算机中的存储介质与局部性原理"></a>计算机中的存储介质与局部性原理</h2><p>计算机中最重要的存储介质分为几类：硬盘、内存、二级缓存(L3,L2，L1)、寄存器。从左往右，访问速度从慢到快，制造成本也越来越高。</p>
+        <h2 id="计算机中的存储介质与局部性原理"><a href="#计算机中的存储介质与局部性原理" class="headerlink" title="计算机中的存储介质与局部性原理"></a>计算机中的存储介质与局部性原理</h2><p>计算机中最重要的存储介质分为几类：硬盘、内存、二级缓存(L3,L2，L1)、寄存器。从左往右，访问速度从慢到快，制造成本也越来越高。</p>
 <p><em>什么是随机IO和顺序IO?<br>随机访问的特点是每次IO请求的数据在磁盘上的位置跨度很大（如：分布在不同的扇区），因此N个非常小的IO请求（如：1K），必须以N次IO请求才能获取到相应的数据。<br>顺序访问的特点跟随机访问相反，它请求的数据在磁盘的位置是连续的。当系统发起N个非常小的IO请求（如：1K）时，因为一次IO是有代价的，系统会取完整的一块数据（如4K、8K），所以当第一次IO完成时，后续IO请求的数据可能已经有了。这样可以减少IO请求的次数。这也就是所谓的预取。</em><br>机械硬盘的磁头移动至正确的磁道上需要时间，随机读写时，磁头不停的移动，时间都花在了磁头寻道上，导致的就是性能不高。所以，对于机械硬盘来说，连续读写性很好，但随机读写性能很差。</p>
 <p>由于存储介质的特性，硬盘本身存取就比主存慢很多，再加上机械运动耗费，硬盘的存取速度往往是主存的几百分分之一，因此为了提高效率，要尽量减少磁盘 I/O。由于磁盘顺序读取的效率很高（不需要寻道时间，只需很少的旋转时间），因此对于具有局部性的程序来说，预读可以提高 I/O 效率。磁盘往往也不是严格按需读取，而是每次都会预读，即使只需要一个字节，磁盘也会从这个位置开始，顺序向后读取一定长度的数据放入内存。这样做的理论依据是计算机科学中著名的局部性原理：<br>当一个数据被用到时，其附近的数据也通常会马上被使用。</p>
 <h2 id="为什么需要索引"><a href="#为什么需要索引" class="headerlink" title="为什么需要索引"></a>为什么需要索引</h2><p>创建好的索引对应用来说特别重要，因为随机IO访问特别慢，如果服务器从存储中读取一个数据块，就为了其中的一行数据那么，那么访问会超级慢。使用索引引用访问的行，那么效率将会提升很多。如果数据存放在机械硬盘，那么速度会更慢。  总结起来有下列优点： </p>
@@ -388,8 +387,6 @@
 <p>剩余空间碎片（Free space fragementation）<br>数据页中有大量的空余空间。会导致服务器读取大量不需要的数据，从而造成浪费。<br>对于 MyISAM 表，这三类碎片化都可能发生。但 InnoDB 不会出现短小的行碎片；InnoDB 会移动短小的行并重写到一个片段中。<br>OPTIMIZE TABLE 或者导出再导入的方式重新整理数据，消除碎片。</p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>尽量避免随机io<br>覆盖查询很快<br>使用索引，避免order by与group的临时表</p>
 
-          
-        
       
     </div>
     
@@ -406,185 +403,28 @@
       
 
       
-
-      
-
       
       
-        <div class="post-eof"></div>
+
       
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://wangamama.github.io/hh.github.io/hh.github.io/2017/09/12/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="号号(个人邮箱a981945164@163.com，不当之处请指正)">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/hh.github.io/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="src">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/hh.github.io/2017/09/12/hello-world/" itemprop="url">我的博客开播了</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-09-12T13:12:39+08:00">
-                2017-09-12
-              </time>
+              <a href="/hh.github.io/2017/09/12/hello-world/" rel="next" title="我的博客开播了">
+                <i class="fa fa-chevron-left"></i> 我的博客开播了
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-            <p>为什么要写博客呢？</p>
-<ol>
-<li>做技术的积累与沉淀，好记性不如烂笔头</li>
-<li>善于总结，是一个善于学习者的必备素质</li>
-<li>网上有很多太水的博客，质量太差，自己想写个质量高一点的</li>
-<li>表达自己的想法—&gt;得到反馈—&gt;反思，修正，提高</li>
-<li>对自己博客的期望： 简洁，直白，原创，排版美观，坚持(持续更新)</li>
-<li>博客要写什么内容: 技术为主，个人感受，影评书评之类的</li>
-<li>如果想联系我，email(a981945164@163.com)</li>
-</ol>
-<h3 id="目录，持续更新中"><a href="#目录，持续更新中" class="headerlink" title="目录，持续更新中"></a>目录，持续更新中</h3><ul>
-<li><p><a href="">谈谈自己在阿里实习的感受</a></p>
-</li>
-<li><p><a href="">谈谈Mysql的索引</a></p>
-</li>
-<li><p><a href="">Mysql的sql优化</a></p>
-</li>
-<li><p><a href="">谈谈Mysql表结构的设计</a></p>
-</li>
-<li><p><a href="">网站安全的那些事</a></p>
-</li>
-<li><p><a href="">关于spring中IOC和AOP的理解</a></p>
-</li>
-<li><p><a href="">设计模式</a></p>
-</li>
-<li><p><a href="">谈谈spring里面的设计模式</a></p>
-</li>
-<li><p><a href="">在数据量比较大的情况下，如何使用hibernate</a></p>
-</li>
-<li><p><a href="">基于ACL和RBAC怎么做权限模型的设计</a></p>
-</li>
-<li><p><a href="">shiro的入门贴</a></p>
-</li>
-<li><p><a href="">ngnix+tomcat+memcached如何做负载均衡</a></p>
-</li>
-<li><p><a href="">谈谈乐观锁</a></p>
-</li>
-<li><p><a href="">如何使用好线程池</a></p>
-</li>
-<li><p><a href="">关于hash的那些事</a></p>
-</li>
-<li><p><a href="">如何在你的项目里面使用activiti</a></p>
-</li>
-<li><p><a href="">如何设计一个大型网站的架构</a></p>
-</li>
-<li><p><a href="">读读struts2的源码</a></p>
-</li>
-<li><p><a href="">CLH锁与MCS锁</a></p>
-</li>
-<li><p><a href="">如何保证接口的幂等性</a></p>
-</li>
-<li><p><a href="">浅谈微服务</a></p>
-</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -594,10 +434,11 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -605,6 +446,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -625,8 +470,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           
             <p class="site-author-name" itemprop="name">号号(个人邮箱a981945164@163.com，不当之处请指正)</p>
@@ -669,6 +523,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#计算机中的存储介质与局部性原理"><span class="nav-number">1.</span> <span class="nav-text">计算机中的存储介质与局部性原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么需要索引"><span class="nav-number">2.</span> <span class="nav-text">为什么需要索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MYISAM索引与innodb索引"><span class="nav-number">3.</span> <span class="nav-text">MYISAM索引与innodb索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖索引"><span class="nav-number">3.1.</span> <span class="nav-text">覆盖索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MYISAM与innodb的使用场景是什么？"><span class="nav-number">3.2.</span> <span class="nav-text">MYISAM与innodb的使用场景是什么？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何建立索引"><span class="nav-number">4.</span> <span class="nav-text">如何建立索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖索引的延时关联策略"><span class="nav-number">4.1.</span> <span class="nav-text">覆盖索引的延时关联策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用索引扫描来做排序"><span class="nav-number">4.2.</span> <span class="nav-text">使用索引扫描来做排序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#冗余索引和重复索引"><span class="nav-number">4.3.</span> <span class="nav-text">冗余索引和重复索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#锁与索引"><span class="nav-number">4.4.</span> <span class="nav-text">锁与索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表的碎片优化"><span class="nav-number">4.5.</span> <span class="nav-text">表的碎片优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">4.6.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -789,6 +659,10 @@
 
 
   
+  <script type="text/javascript" src="/hh.github.io/js/src/scrollspy.js?v=5.1.2"></script>
+<script type="text/javascript" src="/hh.github.io/js/src/post-details.js?v=5.1.2"></script>
+
+
 
   
 
