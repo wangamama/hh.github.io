@@ -104,7 +104,7 @@
 <meta property="og:description" content="先胡乱的扯几句，为什么要写这个帖子呢，因为大四的时候发现自己的sql写的不太好，后来项目的网站又有性能优化的需求，就主动的断断续续的关注这个问题，下面主要对自己看到的用到的一些内容做一个总结。 为什么查询会变慢最简单的衡量查询开销的三个指标如下：响应时间(服务时间+排队时间(等待IO或者锁))，扫描的行数，返回的行数一般 MySQL 能够使用如下三种方式应用 WHERE 条件，从好到坏以此为：在索">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://images2015.cnblogs.com/blog/943211/201604/943211-20160423215930054-1343859589.png">
-<meta property="og:updated_time" content="2017-09-18T19:17:50.447Z">
+<meta property="og:updated_time" content="2017-09-18T19:24:25.670Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mysql的sql优化">
 <meta name="twitter:description" content="先胡乱的扯几句，为什么要写这个帖子呢，因为大四的时候发现自己的sql写的不太好，后来项目的网站又有性能优化的需求，就主动的断断续续的关注这个问题，下面主要对自己看到的用到的一些内容做一个总结。 为什么查询会变慢最简单的衡量查询开销的三个指标如下：响应时间(服务时间+排队时间(等待IO或者锁))，扫描的行数，返回的行数一般 MySQL 能够使用如下三种方式应用 WHERE 条件，从好到坏以此为：在索">
@@ -401,86 +401,85 @@
 <span class="keyword">GROUP</span> <span class="keyword">BY</span> film_actor.actor_id;
 </code></pre>
 <h3 id="使用用户自定义变量的场景"><a href="#使用用户自定义变量的场景" class="headerlink" title="使用用户自定义变量的场景"></a>使用用户自定义变量的场景</h3><p>用户自定义变量的生命周期是在一个连接中有效，所以不能用它们来做连接间的通信。<br>使用用户自定义变量的一个重要特性是可以在给一个变量赋值的同时使用这个变量。</p>
-<pre><code>使用变量显示行号
-SET @rownum := 0;
-SELECT
+<pre><code class="sql">使用变量显示行号
+<span class="keyword">SET</span> @<span class="keyword">rownum</span> := <span class="number">0</span>;
+<span class="keyword">SELECT</span>
   actor_id,
-  @rownum := @rownum + 1 AS rownum
-FROM actor
-LIMIT 3;
+  @<span class="keyword">rownum</span> := @<span class="keyword">rownum</span> + <span class="number">1</span> <span class="keyword">AS</span> <span class="keyword">rownum</span>
+<span class="keyword">FROM</span> actor
+<span class="keyword">LIMIT</span> <span class="number">3</span>;
 下面的例子是找出电影数量最多的10个演员，要求是当电影数量一样的时候，排名一样。
-SET @curr_cnt := 0, @prev_cnt := 0, @rank := 0;
+<span class="keyword">SET</span> @curr_cnt := <span class="number">0</span>, @prev_cnt := <span class="number">0</span>, @<span class="keyword">rank</span> := <span class="number">0</span>;
 
-SELECT
+<span class="keyword">SELECT</span>
   actor_id,
-  @curr_cnt := cnt                                          AS cnt,//当前这个演员的电影数量
-  @rank     := if(@prev_cnt &lt;&gt; @curr_cnt, @rank + 1, @rank) AS rank,//当前这个演员的电影数量与上一个排名的电影数量不一样的时候，rank才加1
-  @prev_cnt := @curr_cnt                                    AS dummy
-FROM (
-   SELECT
+  @curr_cnt := cnt                                          <span class="keyword">AS</span> cnt,//当前这个演员的电影数量
+  @<span class="keyword">rank</span>     := <span class="keyword">if</span>(@prev_cnt &lt;&gt; @curr_cnt, @<span class="keyword">rank</span> + <span class="number">1</span>, @<span class="keyword">rank</span>) <span class="keyword">AS</span> <span class="keyword">rank</span>,//当前这个演员的电影数量与上一个排名的电影数量不一样的时候，<span class="keyword">rank</span>才加<span class="number">1</span>
+  @prev_cnt := @curr_cnt                                    <span class="keyword">AS</span> dummy
+<span class="keyword">FROM</span> (
+   <span class="keyword">SELECT</span>
      actor_id,
-     COUNT(*) AS cnt
-   FROM film_actor
-   GROUP BY actor_id
-   ORDER BY cnt DESC
-   LIMIT 10
-) AS der;
+     <span class="keyword">COUNT</span>(*) <span class="keyword">AS</span> cnt
+   <span class="keyword">FROM</span> film_actor
+   <span class="keyword">GROUP</span> <span class="keyword">BY</span> actor_id
+   <span class="keyword">ORDER</span> <span class="keyword">BY</span> cnt <span class="keyword">DESC</span>
+   <span class="keyword">LIMIT</span> <span class="number">10</span>
+) <span class="keyword">AS</span> der;
 
 更新行的同时返回行的信息，相当于java里面的addAndGet()
  常规做法
-UPDATE tbl SET tbl.lastupdated = NOW() WHERE id = 1;
-SELECT lastupdated FROM tbl WHERE id = 1;
+<span class="keyword">UPDATE</span> tbl <span class="keyword">SET</span> tbl.lastupdated = <span class="keyword">NOW</span>() <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;
+<span class="keyword">SELECT</span> lastupdated <span class="keyword">FROM</span> tbl <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;
  使用变量，无须访问数据表，更高效
-UPDATE tbl SET tbl.lastupdated = NOW() WHERE id = 1 AND @now := NOW();
-SELECT @now;
+<span class="keyword">UPDATE</span> tbl <span class="keyword">SET</span> tbl.lastupdated = <span class="keyword">NOW</span>() <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">AND</span> @<span class="keyword">now</span> := <span class="keyword">NOW</span>();
+<span class="keyword">SELECT</span> @<span class="keyword">now</span>;
 
 将用户分为热门用户和归档用户。查询用户时，热门用户中查不出来才去查归档用户，避免不必要的 UNION 子查询。
 查询用户，热门用户中查不出来则查归档用户
-SELECT
-  greatest(@found := -1, id) AS id,//GREATEST()函数返回输入参数(n1, n2, n3, 等)组的最大值
-  &apos;users&apos;                    AS which_tbl
-FROM users
-WHERE id = 1
+<span class="keyword">SELECT</span>
+  <span class="keyword">greatest</span>(@<span class="keyword">found</span> := <span class="number">-1</span>, <span class="keyword">id</span>) <span class="keyword">AS</span> <span class="keyword">id</span>,//<span class="keyword">GREATEST</span>()函数返回输入参数(n1, n2, n3, 等)组的最大值
+  <span class="string">'users'</span>                    <span class="keyword">AS</span> which_tbl
+<span class="keyword">FROM</span> <span class="keyword">users</span>
+<span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>
 
-UNION ALL
+<span class="keyword">UNION</span> ALL
 
-SELECT
-  id,
-  &apos;users_archived&apos; AS which_tbl
-FROM users_archived
-WHERE id = 1 AND @found IS NULL
+<span class="keyword">SELECT</span>
+  <span class="keyword">id</span>,
+  <span class="string">'users_archived'</span> <span class="keyword">AS</span> which_tbl
+<span class="keyword">FROM</span> users_archived
+<span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">AND</span> @<span class="keyword">found</span> <span class="keyword">IS</span> <span class="literal">NULL</span>
 
-UNION ALL
+<span class="keyword">UNION</span> ALL
 将变量充值，避免影响下次查询
-SELECT
-  1,
-  &apos;reset&apos;
-FROM dual ---dual虚拟表
-WHERE (@found := NULL) IS NOT NULL;
-</code></pre><pre><code>
-### 其他
-
-1.  当使用group by的时候，结果会自动根据分组的字段进行排序，如果不在乎顺序，而这种默认的排序使用的文件排序，那么使用order by null.也可以直接在group by后面加acs,desc
-2.    如果需要重复使用大型表中的某个数据集，那么建立临时表是很好的选择，如果使用到了临时表，需要显示的删除先 truncate table ，然后 drop table ，这样可以避免系统表的较长时间锁定。
-3.    对select *保持怀疑态度，大部分情况下，这种查询都是错误的。  
-4.    使用union all代替or,一般情况下一定要使用union all,这样会避免在临时表中去重复，会极大的提高性能。  
-5.    Like很慢，有必要的话使用fulltext全文索引
-6.    确保group和order by中的表达式只涉及一个表的列
-7. 关于分页的优化，在上一节讲过，就是利用延迟关联的思想，要解决的问题就是当偏移量特别大的时候，扫描的性能很差，可以使用索引覆盖扫描，让查询更快
-
-```sql
--- 延迟关联，大大提升查询效率
-SELECT
+<span class="keyword">SELECT</span>
+  <span class="number">1</span>,
+  <span class="string">'reset'</span>
+<span class="keyword">FROM</span> dual <span class="comment">---dual虚拟表</span>
+<span class="keyword">WHERE</span> (@<span class="keyword">found</span> := <span class="literal">NULL</span>) <span class="keyword">IS</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>;
+</code></pre>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ol>
+<li>当使用group by的时候，结果会自动根据分组的字段进行排序，如果不在乎顺序，而这种默认的排序使用的文件排序，那么使用order by null.也可以直接在group by后面加acs,desc</li>
+<li>如果需要重复使用大型表中的某个数据集，那么建立临时表是很好的选择，如果使用到了临时表，需要显示的删除先 truncate table ，然后 drop table ，这样可以避免系统表的较长时间锁定。</li>
+<li>对select *保持怀疑态度，大部分情况下，这种查询都是错误的。  </li>
+<li>使用union all代替or,一般情况下一定要使用union all,这样会避免在临时表中去重复，会极大的提高性能。  </li>
+<li>Like很慢，有必要的话使用fulltext全文索引</li>
+<li>确保group和order by中的表达式只涉及一个表的列</li>
+<li>关于分页的优化，在上一节讲过，就是利用延迟关联的思想，要解决的问题就是当偏移量特别大的时候，扫描的性能很差，可以使用索引覆盖扫描，让查询更快</li>
+</ol>
+<pre><code class="sql">延迟关联，大大提升查询效率
+<span class="keyword">SELECT</span>
   film_id,
   description
-FROM film
-  INNER JOIN (
-       SELECT film_id
-       FROM film
-       ORDER BY title
-       LIMIT 50, 5
-     ) AS lim USING (film_id);
-</code></pre><p>但是很多优化的策略并不是绝对的，我觉得需要用explain进行分析。<br>同样将某个很复杂的查询进行分解，将会减少锁的竞争。让应用层做更多的事，或者更擅长的事，也是一个很好的策略。将某些逻辑处理交给应用层处理也很有帮助。</p>
+<span class="keyword">FROM</span> film
+  <span class="keyword">INNER</span> <span class="keyword">JOIN</span> (
+       <span class="keyword">SELECT</span> film_id
+       <span class="keyword">FROM</span> film
+       <span class="keyword">ORDER</span> <span class="keyword">BY</span> title
+       <span class="keyword">LIMIT</span> <span class="number">50</span>, <span class="number">5</span>
+     ) <span class="keyword">AS</span> lim <span class="keyword">USING</span> (film_id);
+</code></pre>
+<p>但是很多优化的策略并不是绝对的，我觉得需要用explain进行分析。<br>同样将某个很复杂的查询进行分解，将会减少锁的竞争。让应用层做更多的事，或者更擅长的事，也是一个很好的策略。将某些逻辑处理交给应用层处理也很有帮助。</p>
 <ol>
 <li>将查询分解，将查询分解后，执行单个查询可以减少锁的竞争。在应用层做关联，可以更容易对数据库进行拆分，更容易做到高性能和可扩展。可以减少冗余记录的查询。这样做相当于在应用中实现了哈希关联，而不是使用 MySQL 的嵌套循环关联。某些场景哈希关联的效率要高很多。</li>
 <li><strong>最左前缀匹配原则，非常重要的原则，mysql会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong>，比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整。<h3 id="范围查询如何使用索引"><a href="#范围查询如何使用索引" class="headerlink" title="范围查询如何使用索引"></a>范围查询如何使用索引</h3>这里有个很重要的技巧就是<strong>使用in来满足索引的最左匹配</strong>，当我们使用某个索引进行范围的查询那么，其后续的索引就无法用来做排序了，此时就会使用filesort。如何避免这种情况呢？<br>就是通过in来满足最多前缀，比如现在有索引(sex,age),我们希望对age排序，可以使用where sex in(‘m’,’f’) order by age。为什么age建立了索引，因为基本的查询都会查询性别，所以sex 虽然选择性不高，作为索引，可以满足覆盖索引。这跟我们前面讲到的有冲突。这里强调的是通过in()可以满足最左前缀。但是不能滥用，如果In里面的列表太大，就会有性能问题。</li>
@@ -654,7 +653,7 @@ FROM film
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么查询会变慢"><span class="nav-number">1.</span> <span class="nav-text">为什么查询会变慢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql的sql执行原理"><span class="nav-number">2.</span> <span class="nav-text">mysql的sql执行原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql的通信协议"><span class="nav-number">2.1.</span> <span class="nav-text">mysql的通信协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql的查询优化器"><span class="nav-number">2.2.</span> <span class="nav-text">mysql的查询优化器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL关联查询（个人感觉比较重要）"><span class="nav-number">2.3.</span> <span class="nav-text">MySQL关联查询（个人感觉比较重要）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排序优化"><span class="nav-number">2.4.</span> <span class="nav-text">排序优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#各个sql优化场景"><span class="nav-number">3.</span> <span class="nav-text">各个sql优化场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关联子查询"><span class="nav-number">3.1.</span> <span class="nav-text">关联子查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最大值和最小值优化"><span class="nav-number">3.2.</span> <span class="nav-text">最大值和最小值优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关联的时候如何建立索引"><span class="nav-number">3.3.</span> <span class="nav-text">关联的时候如何建立索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#优化-GROUP-BY-和-DISTINCT"><span class="nav-number">3.4.</span> <span class="nav-text">优化 GROUP BY 和 DISTINCT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用用户自定义变量的场景"><span class="nav-number">3.5.</span> <span class="nav-text">使用用户自定义变量的场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#范围查询如何使用索引"><span class="nav-number">3.6.</span> <span class="nav-text">范围查询如何使用索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EXPLAIN"><span class="nav-number">3.7.</span> <span class="nav-text">EXPLAIN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#练习题"><span class="nav-number">4.</span> <span class="nav-text">练习题</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么查询会变慢"><span class="nav-number">1.</span> <span class="nav-text">为什么查询会变慢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql的sql执行原理"><span class="nav-number">2.</span> <span class="nav-text">mysql的sql执行原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql的通信协议"><span class="nav-number">2.1.</span> <span class="nav-text">mysql的通信协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql的查询优化器"><span class="nav-number">2.2.</span> <span class="nav-text">mysql的查询优化器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL关联查询（个人感觉比较重要）"><span class="nav-number">2.3.</span> <span class="nav-text">MySQL关联查询（个人感觉比较重要）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排序优化"><span class="nav-number">2.4.</span> <span class="nav-text">排序优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#各个sql优化场景"><span class="nav-number">3.</span> <span class="nav-text">各个sql优化场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关联子查询"><span class="nav-number">3.1.</span> <span class="nav-text">关联子查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最大值和最小值优化"><span class="nav-number">3.2.</span> <span class="nav-text">最大值和最小值优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关联的时候如何建立索引"><span class="nav-number">3.3.</span> <span class="nav-text">关联的时候如何建立索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#优化-GROUP-BY-和-DISTINCT"><span class="nav-number">3.4.</span> <span class="nav-text">优化 GROUP BY 和 DISTINCT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用用户自定义变量的场景"><span class="nav-number">3.5.</span> <span class="nav-text">使用用户自定义变量的场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他"><span class="nav-number">3.6.</span> <span class="nav-text">其他</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#范围查询如何使用索引"><span class="nav-number">3.7.</span> <span class="nav-text">范围查询如何使用索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EXPLAIN"><span class="nav-number">3.8.</span> <span class="nav-text">EXPLAIN</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#练习题"><span class="nav-number">4.</span> <span class="nav-text">练习题</span></a></li></ol></div>
             
 
           </div>
