@@ -104,7 +104,7 @@
 <meta property="og:description" content="先胡乱的扯几句，为什么要写这个帖子呢，因为大四的时候发现自己的sql写的不太好，后来项目的网站又有性能优化的需求，就主动的断断续续的关注这个问题，下面主要对自己看到的用到的一些内容做一个总结。 为什么查询会变慢最简单的衡量查询开销的三个指标如下：响应时间(服务时间+排队时间(等待IO或者锁))，扫描的行数，返回的行数一般 MySQL 能够使用如下三种方式应用 WHERE 条件，从好到坏以此为：在索">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://images2015.cnblogs.com/blog/943211/201604/943211-20160423215930054-1343859589.png">
-<meta property="og:updated_time" content="2017-09-18T19:31:38.027Z">
+<meta property="og:updated_time" content="2017-09-19T09:55:12.797Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mysql的sql优化">
 <meta name="twitter:description" content="先胡乱的扯几句，为什么要写这个帖子呢，因为大四的时候发现自己的sql写的不太好，后来项目的网站又有性能优化的需求，就主动的断断续续的关注这个问题，下面主要对自己看到的用到的一些内容做一个总结。 为什么查询会变慢最简单的衡量查询开销的三个指标如下：响应时间(服务时间+排队时间(等待IO或者锁))，扫描的行数，返回的行数一般 MySQL 能够使用如下三种方式应用 WHERE 条件，从好到坏以此为：在索">
@@ -482,6 +482,9 @@
 <li><p>将查询分解，将查询分解后，执行单个查询可以减少锁的竞争。在应用层做关联，可以更容易对数据库进行拆分，更容易做到高性能和可扩展。可以减少冗余记录的查询。这样做相当于在应用中实现了哈希关联，而不是使用 MySQL 的嵌套循环关联。某些场景哈希关联的效率要高很多,让应用层做更多的事，或者更擅长的事，也是一个很好的策略。将某些逻辑处理交给应用层处理也很有帮助。</p>
 </li>
 <li><strong>最左前缀匹配原则，非常重要的原则，mysql会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong>，比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整。</li>
+<li>非常主要的一点：<br>count(distinct col) 计算该列除 NULL 之外的不重复数量。注意 count(distinct<br>col1, col2) 如果其中一列全为 NULL，那么即使另一列有不同的值，也返回为 0。</li>
+<li>当某一列的值全是 NULL 时， count(col)的返回结果为 0，但 sum(col)的返回结果为<br>NULL，因此使用 sum()时需注意 NPE 问题。<br>正例： 可以使用如下方式来避免 sum 的 NPE 问题： SELECT IF(ISNULL(SUM(g)),0,SUM(g)) FROM<br>table;</li>
+<li>【强制】使用 ISNULL()来判断是否为 NULL 值。注意： NULL 与任何值的直接比较都为 NULL。<br>说明：<br>1） NULL&lt;&gt;NULL 的返回结果是 NULL，不是 false。<br>2） NULL=NULL 的返回结果是 NULL，不是 true。<br>3） NULL&lt;&gt;1 的返回结果是 NULL，而不是 true。</li>
 </ol>
 <h3 id="范围查询如何使用索引"><a href="#范围查询如何使用索引" class="headerlink" title="范围查询如何使用索引"></a>范围查询如何使用索引</h3><p>这里有个很重要的技巧就是<strong>使用in来满足索引的最左匹配</strong>，当我们使用某个索引进行范围的查询那么，其后续的索引就无法用来做排序了，此时就会使用filesort。如何避免这种情况呢？<br>就是通过in来满足最多前缀，比如现在有索引(sex,age),我们希望对age排序，可以使用where sex in(‘m’,’f’) order by age。为什么age建立了索引，因为基本的查询都会查询性别，所以sex 虽然选择性不高，作为索引，可以满足覆盖索引。这跟我们前面讲到的有冲突。这里强调的是通过in()可以满足最左前缀。但是不能滥用，如果In里面的列表太大，就会有性能问题。</p>
 <h3 id="EXPLAIN"><a href="#EXPLAIN" class="headerlink" title="EXPLAIN"></a>EXPLAIN</h3><p>但是很多优化的策略并不是绝对的，我觉得需要用explain进行分析。<br>type:<br>表示MySQL在表中找到所需行的方式，又称“访问类型”，常见类型如下:<br>ALL, index,  range, ref, eq_ref, const, system, NULL从左到右，性能从最差到最好<br>ALL：Full Table Scan， MySQL将遍历全表以找到匹配的行<br>index：Full Index Scan，index与ALL区别为index类型只遍历索引树<br>range:索引范围扫描，对索引的扫描开始于某一点，返回匹配值域的行。显而易见的索引范围扫描是带有between或者where子句里带有&lt;, &gt;查询。当mysql使用索引去查找一系列值时，例如IN()和OR列表，也会显示range（范围扫描）,当然性能上面是有差异的。<br>ref：使用非唯一索引扫描或者唯一索引的前缀扫描，返回匹配某个单独值的记录行<br>eq_ref：类似ref，区别就在使用的索引是唯一索引，对于每个索引键值，表中只有一条记录匹配，简单来说，就是多表连接中使用primary key或者 unique key作为关联条件<br>const、system：当MySQL对查询某部分进行优化，并转换为一个常量时，使用这些类型访问。如将主键置于where列表中，MySQL就能将该查询转换为一个常量<br>NULL：MySQL在优化过程中分解语句，执行时甚至不用访问表或索引，例如从一个索引列里选取最小值可以通过单独索引查找完成。</p>
@@ -531,8 +534,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/hh.github.io/2017/09/19/谈谈Mysql表结构的设计/" rel="prev" title="谈谈Mysql表结构的设计(分库分表浅析)">
-                谈谈Mysql表结构的设计(分库分表浅析) <i class="fa fa-chevron-right"></i>
+              <a href="/hh.github.io/2017/09/19/谈谈Mysql表结构的设计/" rel="prev" title="谈谈Mysql表结构的设计(如何存储URL等)">
+                谈谈Mysql表结构的设计(如何存储URL等) <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>

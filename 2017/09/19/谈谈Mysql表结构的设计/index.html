@@ -95,17 +95,17 @@
 
 
 
-<meta name="description" content="开始之前还是 表结构">
+<meta name="description" content="字段类型的选择 更小，节省存储空间；能用tiny int不用Int，更小的有利于提升检索速度。  简单(使用整形存储IP，整形肯定比字符串类型操作更快)用UNSINGED INT存储IP地址占用4字节，CHAR(15)则占用15字节。另外，计算机处理整数类型比字符串类型快。使用INT UNSIGNED而不是CHAR(15)来存储IPV4地址，通过MySQL函数inet_ntoa和inet_aton">
 <meta property="og:type" content="article">
-<meta property="og:title" content="谈谈Mysql表结构的设计(分库分表浅析)">
+<meta property="og:title" content="谈谈Mysql表结构的设计(如何存储URL等)">
 <meta property="og:url" content="https://wangamama.github.io/hh.github.io/2017/09/19/谈谈Mysql表结构的设计/index.html">
 <meta property="og:site_name" content="src">
-<meta property="og:description" content="开始之前还是 表结构">
+<meta property="og:description" content="字段类型的选择 更小，节省存储空间；能用tiny int不用Int，更小的有利于提升检索速度。  简单(使用整形存储IP，整形肯定比字符串类型操作更快)用UNSINGED INT存储IP地址占用4字节，CHAR(15)则占用15字节。另外，计算机处理整数类型比字符串类型快。使用INT UNSIGNED而不是CHAR(15)来存储IPV4地址，通过MySQL函数inet_ntoa和inet_aton">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2017-09-19T08:02:38.917Z">
+<meta property="og:updated_time" content="2017-09-22T09:18:37.568Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="谈谈Mysql表结构的设计(分库分表浅析)">
-<meta name="twitter:description" content="开始之前还是 表结构">
+<meta name="twitter:title" content="谈谈Mysql表结构的设计(如何存储URL等)">
+<meta name="twitter:description" content="字段类型的选择 更小，节省存储空间；能用tiny int不用Int，更小的有利于提升检索速度。  简单(使用整形存储IP，整形肯定比字符串类型操作更快)用UNSINGED INT存储IP地址占用4字节，CHAR(15)则占用15字节。另外，计算机处理整数类型比字符串类型快。使用INT UNSIGNED而不是CHAR(15)来存储IPV4地址，通过MySQL函数inet_ntoa和inet_aton">
 
 
 
@@ -141,7 +141,7 @@
 
 
 
-  <title>谈谈Mysql表结构的设计(分库分表浅析) | src</title>
+  <title>谈谈Mysql表结构的设计(如何存储URL等) | src</title>
   
 
 
@@ -265,7 +265,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">谈谈Mysql表结构的设计(分库分表浅析)</h1>
+          <h1 class="post-title" itemprop="name headline">谈谈Mysql表结构的设计(如何存储URL等)</h1>
         
 
         <div class="post-meta">
@@ -315,8 +315,105 @@
       
 
       
-        <p>开始之前还是</p>
-<h2 id="表结构"><a href="#表结构" class="headerlink" title="表结构"></a>表结构</h2>
+        <h2 id="字段类型的选择"><a href="#字段类型的选择" class="headerlink" title="字段类型的选择"></a>字段类型的选择</h2><ol>
+<li><p>更小，节省存储空间；能用tiny int不用Int，更小的有利于提升检索速度。</p>
+</li>
+<li><p>简单(使用整形存储IP，整形肯定比字符串类型操作更快)<br>用UNSINGED INT存储IP地址占用4字节，CHAR(15)则占用15字节。另外，计算机处理整数类型比字符串类型快。使用INT UNSIGNED而不是CHAR(15)来存储IPV4地址，通过MySQL函数inet_ntoa和inet_aton来进行转化。IPv6地址目前没有转化函数，需要使用DECIMAL或两个BIGINT来存储。</p>
+</li>
+<li><p>避免NULL；<br>可为null的列会使用更多的存储空间，也需要特殊的处理。当可为null的列做索引的时候，每个索引记录需要一个额外的字节。在MYISAM引擎中，可能会导致固定大小的索引（如只有一个整数列的索引）变成可变大小的索引。<br>在数据库优化中，将null改为not null，带来的性能提升并不是很大，但是如果该列上有索引，那么需要避免设计为null.<br>但是也有例外，<strong>InnoDB使用单独的bit存储Null值，所以对稀疏数据有很好的空间效率，不同于MYISAM</strong>。</p>
+</li>
+<li><p>存储年使用YEAR类型。存储日期使用DATE类型。存储时间(精确到秒)建议使用TIMESTAMP类型。 TIMESTAMP保存了从1970.1.1以来的秒数。FROM-UNIXTIME()可以将UNIX时间戳转化为日期,UNIX_TIMESTAMP()函数将日期转化为UNIX时间戳。<br>DATETIME和TIMESTAMP都是精确到秒，优先选择TIMESTAMP，因为TIMESTAMP只有4个字节，而DATETIME8个字节。同时TIMESTAMP具有自动赋值以及⾃自动更新的特性。注意：在5.5和之前的版本中，如果一个表中有多个timestamp列，那么最多只能有一列能具有自动更新功能。<br>如何使用TIMESTAMP的自动赋值属性?<br>自动初始化，而且自动更新：<br>column1 TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATECURRENT_TIMESTAMP<br>只是自动初始化：<br>column1 TIMESTAMP DEFAULT CURRENT_TIMESTAMP<br>自动更新，初始化的值为0：<br>column1 TIMESTAMP DEFAULT 0 ON UPDATE CURRENT_TIMESTAMP</p>
+</li>
+<li><p>使用ENUM代替字符串的类型<br>其实际在数据表中存储的是数字序号，所以其排序是按照内部的存储的整数进行排序。枚举最不好的地方就是列表是固定的，如果要修改列表，就需要修改table,而且将枚举与char进行关联可能会比char关联char列更慢。如果在应用场景适合的情况下，应该使用enum。<br>create table t(e ENUM(“a”,”b”) not null)</p>
+</li>
+<li><p>为什么不应该使用字符串类型作为主键<br>因为插入值会随机的写到索引的不同位置，使得Insert很慢，这会导致页分裂，磁盘随机访问(因为需要先找到需要插入的位置读入内存，所以肯定会引起随机IO)，以及对于聚簇存储引擎产生的聚簇索引碎片.<br>Select会变慢，因为逻辑上相邻的行会分布在磁盘和内存上的不同位置。<br>随机性导致缓存对于所有类型的查询语句的效果都很差，因为缓存赖以工作的访问局部性原理失效。这个原理特别重要。<br><strong>我觉得，如果表的数据很少，使用自定义字符串的类型定义主键，可能会为业务上带来很大的方便。要视使用场景而定。</strong><br>如果使用uuid作为主键那么必须去掉-符号，更好的做法是UNHX()函数将其转化为16字节的数字。使用uuid，当我们明确需要分库分表的时候，采用uuid作为主键，有利于扩展性。<br><strong>其实自增的主键当并发量比较高的时候，生成唯一的自增序列也需要很大的消耗。</strong></p>
+</li>
+<li><p>Blob和TEXT是为存储很大数据而设计的字符串类型，分别采用二进制和字符方式存储。Mysql会对这两种类型做特殊的处理，当text或者blob过大的时候，mysql会有专门的存储区域存储数据，而在行内存储指向数据的指针(1到4个指针)。<br>当长度超过5000的时候，就要使用TEXT，而且要注意的是使用TEXT要独立一张表出来，避免影响其他字段索引的效率。</p>
+</li>
+<li><p>varchar与char的区别：<br>varchar采用额外的一到两个字节记录字符串的长度，例如varchar(1000)实际上使用了1002个字节。<br>varchar的最大缺点就是：因为长度是可变的，行变长时，如果页内没有更多的空间可以存储，MyISAM 会将行拆成不同的片段存储，InnoDB 则需要分裂页来使行可以放进页内(InnoDB不会出现行碎片，InnoDB 会移动短小的行并重写到一个新的片段中，参见索引那个博客有仔细讲过)，所以就会导致碎片的问题。<br>如果字符串是基本定长的，采用char将能获得更好的性能，因为不易产生碎片的问题。但是有一定有注意，<strong>char会去掉字符串末尾的空格</strong>。</p>
+</li>
+<li><p>建表必有三个字段，id, create_time,modified_time，主键(big int),创建时间，最近修改一次的时间。我本人还喜欢在建表的时候，加一个remark的备注字段，因为在做项目的过程中，往往会出现字段不够用的情况，但是不利于其他人维护。</p>
+</li>
+<li><p>如何存储小数：<br>小数类型为 decimal，禁止使用 float 和 double。 float 和 double 在存储的时候，存在精度损失的问题，很可能在值的比较时，得到不<br>正确的结果。如果存储的数据范围超过 decimal 的范围，建议将数据拆成整数和小数分开存储。<br>为什么浮点数不能精确计算？</p>
+<h2 id="如何存储URL-伪哈希索引"><a href="#如何存储URL-伪哈希索引" class="headerlink" title="如何存储URL(伪哈希索引)"></a>如何存储URL(伪哈希索引)</h2></li>
+</ol>
+<p>这个场景在我们之前的项目中出现过，之前项目的需求是生成大量的短连接，然后当用户通过短连接访问的时候，就需要查询该短连接所在的行里面的数据。如何快速检索呢？</p>
+<p>在介绍我们的处理办法之前，先介绍一下mysql里面的另外一种索引hash索引：<br>在 MySQL 中，只有 Memory 引擎显式支持哈希索引。 Memory 引擎是支持 非唯一哈希索引的。</p>
+<pre><code class="sql"> <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hash_test (
+fname <span class="built_in">VARCHAR</span>(<span class="number">50</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,
+lname <span class="built_in">VARCHAR</span>(<span class="number">50</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,
+<span class="keyword">KEY</span> <span class="keyword">USING</span> <span class="keyword">HASH</span> (fname) 
+) <span class="keyword">ENGINE</span> = <span class="keyword">MEMORY</span>;
+</code></pre>
+<p>哈希索引的限制：</p>
+<p>哈希索引只包含哈希值和行指针，而不存储字段值，所以不能使用索引中的值来避免读取行。</p>
+<p>哈希索引数据并不是按照索引值顺序存储的，所以也就无法用于排序。</p>
+<p>哈希索引也不支持部分索引列匹配查找，因为哈希索引始终是使用索引列的全部内容来计算哈希值的。</p>
+<p>哈希索引只支持等值比较查询，包括 =、 IN()、 &lt;⇒(注意 &lt;&gt; 和 &lt;=&gt; 是不同的操作, &lt;=&gt;像常规的=运算符一样，两个值进行比较，结果是0（不等于）或1（相等）;换句话说：’A’&lt;=&gt;’B’得0和’a’&lt;=&gt;’a‘得1,但是和=运算符不同的是，NULL的值是没有任何意义的。所以=号运算符不能把NULL作为有效的结果。所以：请使用&lt;=&gt;，’a’ &lt;=&gt; NULL 得0   NULL&lt;=&gt; NULL 得出 1)。</p>
+<p>访问哈希索引的数据非常快，除非有很多哈希冲突。哈希冲突时使用链表来解决哈希冲突。</p>
+<p>如果哈希冲突很多的话，一些所以维护操作的代价也会很高。冲突越多，代价越大。</p>
+<p>因为这些限制，哈希索引只适用于某些特定的场合。而一旦适合哈希索引，则它带来的性能提升将非常显著。</p>
+<p>如果存储引擎不支持哈希索引，可以模拟 InnoDB 一样创建哈希索引。思路：在 B-Tree 基础上创建一个伪哈希索引。并不是真正的哈希索引，本质还是使用 B-Tree 进行查找，但它使用哈希值而不是键本身进行查找。需要做的就是在查询的 WHERE 子句中手动指定使用哈希函数。<br>以下举个例子，展示下hash索引的结构，f表示哈希函数<br>f(“a”) =123;所在行是第一行<br>f(“b”) =124;所在行是第二行<br>哈希的结构为<br>key    value<br>123    指向第一行的指针<br>124    指向第二行的指针</p>
+<pre><code class="sql">   <span class="keyword">SELECT</span> <span class="keyword">id</span>
+<span class="keyword">FROM</span> <span class="keyword">url</span>
+<span class="keyword">WHERE</span> <span class="keyword">url</span>=<span class="string">'http://www.diguage.com/'</span>;
+<span class="comment">-- 创建自定义哈希索引</span>
+<span class="comment">-- 注意：这里需要在 url_crc 字段上创建索引</span>
+<span class="keyword">SELECT</span> <span class="keyword">id</span>
+<span class="keyword">FROM</span> <span class="keyword">url</span>
+<span class="keyword">WHERE</span> <span class="keyword">url</span>=<span class="string">'http://www.diguage.com/'</span>
+    <span class="keyword">AND</span> url_crc=<span class="keyword">CRC32</span>(<span class="string">'http://www.diguage.com/'</span>);//url='http://www.diguage.com/'是必须的，好比hashmap里面的equals
+</code></pre>
+<p>自定义哈希索引的缺陷是需要维护哈希值。可以手动维护，也可以使用触发器实现。示例如下：</p>
+<pre><code class="sql"><span class="comment">-- 插入触发器</span>
+<span class="keyword">CREATE</span> <span class="keyword">TRIGGER</span> url_crc_ins
+<span class="keyword">BEFORE</span> <span class="keyword">INSERT</span> <span class="keyword">ON</span> <span class="keyword">url</span>
+<span class="keyword">FOR</span> <span class="keyword">EACH</span> <span class="keyword">ROW</span> <span class="keyword">BEGIN</span>
+  <span class="keyword">SET</span> new.url_crc = <span class="keyword">crc32</span>(new.url);
+<span class="keyword">END</span>;
+<span class="comment">-- 更新触发器</span>
+<span class="keyword">CREATE</span> <span class="keyword">TRIGGER</span> url_crc_upd
+<span class="keyword">BEFORE</span> <span class="keyword">UPDATE</span> <span class="keyword">ON</span> <span class="keyword">url</span>
+<span class="keyword">FOR</span> <span class="keyword">EACH</span> <span class="keyword">ROW</span> <span class="keyword">BEGIN</span>
+  <span class="keyword">SET</span> new.url_crc = <span class="keyword">crc32</span>(new.url);
+<span class="keyword">END</span>;
+</code></pre>
+<p>采用这种方式，记住不要使用 SHA1() 和 MD5() 作为哈希函数。因为这两个函数计算出来的哈希值是非常长的字符串，会浪费大量空间，更新时也会更慢。 SHA1() 和 MD5() 是强加密算法，设计目标是最大限度消除冲突，但这里并不需要这样高的要求。简单哈希函数的冲突在一个可以接受的范围，同时又能够提供更好的性能。</p>
+<p>好了，根据以上的描述你应该大体知道了怎么存储URL了。大体思路如下所示(用md5函数举例):<br>加多一个字段 url_md5 将 md5(url) 的值存入这个字段，给 url_md5 这个字段设置唯一索引。查询的时候，将要查询的 url 取 md5: select * from table_name where url_md5=URL_MD5 and url=”url”。<br>这种方式需要注意的点就是，可能 url 不同，但是 md5(url) 相同，这种情况只需要再判断下数据表记录集里面的 url 和你需要的 url 是否相同即可。</p>
+<h2 id="范式与反范式"><a href="#范式与反范式" class="headerlink" title="范式与反范式"></a>范式与反范式</h2><h3 id="三范式的介绍"><a href="#三范式的介绍" class="headerlink" title="三范式的介绍"></a>三范式的介绍</h3><p>范式的优点就是方便更新，只需要修改少量的信息。缺点就是需要关联，代价很高，会使一些索引策略失效。</p>
+<ol>
+<li><p>第一范式(<strong>确保每列保持原子性</strong>)<br>第一范式是最基本的范式。如果数据库表中的所有字段值都是不可分解的原子值，就说明该数据库表满足了第一范式。<br>比如某些数据库系统中需要用到“地址”这个属性，本来直接将“地址”属性设计成一个数据库表的字段就行。但是如果系统经常会访问“地址”属性中的“城市”部分，那么就非要将“地址”这个属性重新拆分为省份、城市、详细地址等多个部分进行存储，这样在对地址中某一部分操作的时候将非常方便。这样设计才算满足了数据库的第一范式</p>
+</li>
+<li><p>第二范式(<strong>消除部分子函数依赖</strong>)<br>第二范式在第一范式的基础之上更进一层。第二范式需要确保数据库表中的每一列都和主键相关，而不能只与主键的某一部分相关（主要针对联合主键而言）。也就是说<strong>在一个数据库表中，一个表中只能保存一种数据，不可以把多种数据保存在同一张数据库表中</strong>。<br>比如要设计一个订单信息表，因为订单中可能会有多种商品，所以要将订单编号和商品编号作为数据库表的联合主键。<br>这样就产生一个问题：这个表中是以订单编号和商品编号作为联合主键。这样在该表中商品名称、单位、商品价格等信息不与该表的主键相关，而仅仅是与商品编号相关。所以在这里违反了第二范式的设计原则。<br>而如果把这个订单信息表进行拆分，把商品信息分离到另一个表中，把订单项目表也分离到另一个表中，就非常完美了。<br>这样设计，在很大程度上减小了数据库的冗余。如果要获取订单的商品信息，使用商品编号到商品信息表中查询即可(外键关联)。</p>
+</li>
+<li><p>第三范式(属性不依赖于其它非主属性，<strong>消除传递依赖</strong>)<br>属性不依赖于其它非主属性.<br>假定学生关系表为Student(学号, 姓名, 年龄, 所在学院, 学院地点, 学院电话)，关键字为单一关键字”学号”，因为存在如下决定关系：<br>(学号) → (姓名, 年龄, 所在学院, 学院地点, 学院电话)<br>这个数据库是符合2NF的，但是不符合3NF，因为存在如下决定关系：<br>(学号) → (所在学院) → (学院地点, 学院电话)<br>把学生关系表分为如下两个表：<br>学生：(学号, 姓名, 年龄, 所在学院)；<br>学院：(学院, 地点, 电话)。</p>
+</li>
+</ol>
+<p>总结:<br>第一范式：1NF是对属性的原子性约束，要求属性具有原子性，不可再分解；<br>通俗的理解是，字段还可以再分吗？如过不能，则是符合1NF的设计。</p>
+<p>第二范式：主键列与非主键列遵循完全函数依赖关系</p>
+<p>第三范式：非主键列之间没有传递函数依赖关系</p>
+<h3 id="为什么要反范式设计"><a href="#为什么要反范式设计" class="headerlink" title="为什么要反范式设计"></a>为什么要反范式设计</h3><p>范式化通常带来的好处：<br>范式化的更新操作通常比反范式化要快。<br>当数据较好地范式化时，就只有很少或者没有重复数据，所以只需要修改更少的数据。<br>范式化的表通常更小，可以更好地存放在内存里，所以执行操作会更快。<br>很少有多余的数据意味着检索列表数据时，更少需要 DISTINCT 或者 GROUP BY 语句。<br>范式化设计的 Schema 的缺点是通常需要关联。</p>
+<p>反范式的优点：<br>反范式化的 Schema 因为所有数据都在一张表中，可以很好地避免关联。<br>单独的表也能使用更有效的索引策略。（在不关联的情况下，即使使用全表扫描，也会避免随机IO; 另外我们知道在关联的时候，索引可能会失效，所以在需要排序和过滤的场景中，设计为一个表，可以满足索引）</p>
+<h3 id="如何反范式设计"><a href="#如何反范式设计" class="headerlink" title="如何反范式设计"></a>如何反范式设计</h3><p>反范式将有些数据合并，提高查询的效率，不用因为关联查询导致巨大的性能问题。</p>
+<p>字段冗余：<br>比如对于经常需要查询的数据，可以通过复制的方法，存储到各个表内，加速查询的效率。比如我之前见过的activiti里面的23张表中，将流程的piid，存储了多份，就是避免了关联查询，后面的博客我会细讲。还比如用户性别这种字段，经常读取，也可以进行复制。复制的意思就是，多个表冗余存储</p>
+<p>还有我们为什么要冗余呢？<br>排序的需要，如果需要通过关联的方式做排序，则代价会很高，如果将字段冗余起来，避免关联，则排序就可以利用索引加速。比如文章表，通常需要根据文章的作者名称排序，如果把作者的名称冗余到文章表，建立索引，那么就可以很好的排序了。</p>
+<p>还有一种设计，就是预先计算，比如需要显示一个用户发送了多少条消息，如果每次统计的话，是一个非常昂贵的查询，如果在user发布message的时候，就更新这个值(+1)，避免了昂贵的扫描统计查询。</p>
+<h3 id="汇总表"><a href="#汇总表" class="headerlink" title="汇总表"></a>汇总表</h3><p>汇总表的设计思想：就是将一些统计，如count的数据汇总到一张表中，比如汇总每月的统计信息，那么如果需要计算季度的信息可以将月的汇总信息加起来。<br>所以汇总表常常需要定时任务，比如要计算某个用户一天内发送了多少条消息，可以一小时生成一条汇总记录，记录该小时内发送的条数，统计的可以分为以下两种方案：</p>
+<ol>
+<li>粗略统计，统计过去23个小时的消息总数<br>select sum(cnt) from 汇总表 where 汇总时间 between concat(left(now(),14),”00:00”)- interval 23 hour and concat(left(now(),14),”00:00”)- interval 1 hour </li>
+<li>精确统计，过去23个小时的发送总数+该小时内发送的总数<br>select count(*) from 消息表 where 发送时间 &gt; concat(left(now(),14),”00:00”)+上面sql计算的结果<br>汇总表解决的问题就是实时统计代价昂贵的问题。</li>
+</ol>
+<h3 id="缓存表"><a href="#缓存表" class="headerlink" title="缓存表"></a>缓存表</h3><p>缓存表的使用场景正好相反，将表中的部分列拿出来作为缓存表，如果主表使用的是innoDB引擎，那么用MYISAM作为缓存表的引擎将会得到更小的索引占用空间，并且支持fulltext索引。myisam引擎使用前缀压缩来减少索引的存储空间，而inoDB不会。缓存表的使用场景就是将部分列拿出来建立索引，满足查询排序的需求。</p>
+<p>在使用缓存表和汇总表时，必须决定是实时维护数据还是定时重建。看需求。定时重建不仅节省资源，还保持表不会有很多碎片，以及完全顺序组织的索引（这会更加高效）。</p>
+<pre><code class="sql"><span class="keyword">DROP</span> <span class="keyword">TABLE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_summary_new, my_summary_old;
+
+<span class="keyword">CREATE</span> <span class="keyword">TABLE</span> my_summary_new <span class="keyword">LIKE</span> my_summary;
+
+<span class="comment">-- TODO：执行汇总操作</span>
+<span class="keyword">RENAME</span> <span class="keyword">TABLE</span> my_summary <span class="keyword">TO</span> my_summary_old, my_summary_new <span class="keyword">TO</span> my_summary;
+</code></pre>
+<p>很重要的要提到的是，当我们在重建汇总表和缓存表的时候，为了保证之前汇总表或者缓存表的可用性，需要建立新表new，然后将new表命名为原来的表，将原来的表命名为old表.这样当新表数据有问题的时候，方便回滚。</p>
+
       
     </div>
     
@@ -472,7 +569,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#表结构"><span class="nav-number">1.</span> <span class="nav-text">表结构</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#字段类型的选择"><span class="nav-number">1.</span> <span class="nav-text">字段类型的选择</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何存储URL-伪哈希索引"><span class="nav-number">2.</span> <span class="nav-text">如何存储URL(伪哈希索引)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#范式与反范式"><span class="nav-number">3.</span> <span class="nav-text">范式与反范式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#三范式的介绍"><span class="nav-number">3.1.</span> <span class="nav-text">三范式的介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么要反范式设计"><span class="nav-number">3.2.</span> <span class="nav-text">为什么要反范式设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何反范式设计"><span class="nav-number">3.3.</span> <span class="nav-text">如何反范式设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#汇总表"><span class="nav-number">3.4.</span> <span class="nav-text">汇总表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#缓存表"><span class="nav-number">3.5.</span> <span class="nav-text">缓存表</span></a></li></ol></li></ol></div>
             
 
           </div>
